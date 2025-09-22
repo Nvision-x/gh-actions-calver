@@ -25,6 +25,9 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
     outputs:
       tag: ${{ steps.calver.outputs.tag }}
       create_release: ${{ steps.calver.outputs.create_release }}
@@ -66,14 +69,21 @@ jobs:
         prefix: ${{ steps.prefix.outputs.prefix }}
         use-sequence: ${{ steps.prefix.outputs.use_sequence }}
 
+    - name: Debug outputs
+      run: |
+        echo "🔍 Debug information:"
+        echo "Tag: '${{ steps.calver.outputs.tag }}'"
+        echo "Create release: '${{ steps.calver.outputs.create_release }}'"
+        echo "Increment: '${{ steps.calver.outputs.increment }}'"
+        echo "Prefix used: '${{ steps.prefix.outputs.prefix }}'"
+        echo "Use sequence: '${{ steps.prefix.outputs.use_sequence }}'"
+
     - name: Create Release
       if: steps.calver.outputs.create_release == 'true'
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.calver.outputs.tag }}
-        release_name: Release ${{ steps.calver.outputs.tag }}
+        name: Release ${{ steps.calver.outputs.tag }}
         body: |
           🎉 **Release ${{ steps.calver.outputs.tag }}**
           

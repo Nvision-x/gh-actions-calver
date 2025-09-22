@@ -43,74 +43,70 @@ runs:
         PREFIX: ${{ inputs.prefix }}
         USE_SEQUENCE: ${{ inputs.use-sequence }}
       run: |
+        set -e
+        
         DATE=$(date +'%Y.%m.%d')
         
         echo "📅 Generating CalVer tag for date: $DATE"
         echo "🏷️ Prefix: ${PREFIX:-'(none)'}"
         echo "🔢 Use sequence: $USE_SEQUENCE"
+        echo "🔑 Repository: $REPOSITORY"
+        
+        # Initialize variables with safe defaults
+        INCREMENT=1
+        TAG=""
+        CREATE_RELEASE="true"
         
         # Fetch all tags to ensure we have the latest state
-        git fetch --tags
+        echo "🔄 Fetching tags..."
+        git fetch --tags 2>/dev/null || echo "⚠️ Failed to fetch tags, continuing..."
         
         # Build base tag format
         if [ -n "$PREFIX" ]; then
           BASE_TAG="${PREFIX}${DATE}"
-          SEARCH_PATTERN="${PREFIX}${DATE}"
         else
           BASE_TAG="$DATE"
-          SEARCH_PATTERN="$DATE"
         fi
         
         if [ "$USE_SEQUENCE" = "true" ]; then
-          # Count existing tags for today using both remote and local checks
+          # Simple approach for counting existing tags
+          echo "🔍 Checking for existing tags..."
+          
           if [ -n "$PREFIX" ]; then
-            REMOTE_COUNT=$(gh api repos/$REPOSITORY/tags --jq ".[].name" | grep -c "^${PREFIX}${DATE}-" 2>/dev/null || echo "0")
-            LOCAL_COUNT=$(git tag -l "${PREFIX}${DATE}-*" | wc -l | tr -d ' ')
+            EXISTING_COUNT=$(git tag -l "${PREFIX}${DATE}-*" 2>/dev/null | wc -l | tr -d ' ')
           else
-            REMOTE_COUNT=$(gh api repos/$REPOSITORY/tags --jq ".[].name" | grep -c "^$DATE-" 2>/dev/null || echo "0")
-            LOCAL_COUNT=$(git tag -l "$DATE-*" | wc -l | tr -d ' ')
+            EXISTING_COUNT=$(git tag -l "${DATE}-*" 2>/dev/null | wc -l | tr -d ' ')
           fi
           
-          # Use the higher count to be safe
-          EXISTING_COUNT=$((REMOTE_COUNT > LOCAL_COUNT ? REMOTE_COUNT : LOCAL_COUNT))
-          
-          # Ensure EXISTING_COUNT is a valid number
-          if ! [[ "$EXISTING_COUNT" =~ ^[0-9]+$ ]]; then
+          # Ensure EXISTING_COUNT is a number, default to 0
+          if [ -z "$EXISTING_COUNT" ]; then
             EXISTING_COUNT=0
           fi
           
-          echo "🔍 Found $EXISTING_COUNT existing tags with sequence for today"
+          echo "🔍 Found $EXISTING_COUNT existing tags for today"
           
-          # Try to find next available increment
+          # Calculate next increment
           INCREMENT=$((EXISTING_COUNT + 1))
           TAG="$BASE_TAG-$INCREMENT"
           
-          # Keep trying until we find a tag that doesn't exist
-          while git tag -l "$TAG" | grep -q "^$TAG$" || gh api repos/$REPOSITORY/tags --jq ".[].name" | grep -q "^$TAG$"; do
+          # Simple check if tag exists
+          if git tag -l "$TAG" 2>/dev/null | grep -q "^$TAG$"; then
             INCREMENT=$((INCREMENT + 1))
             TAG="$BASE_TAG-$INCREMENT"
-            echo "🔄 Tag $BASE_TAG-$((INCREMENT-1)) exists, trying $TAG"
-          done
-          
-          if [ "$EXISTING_COUNT" -eq 0 ]; then
-            echo "🎉 Creating first sequenced release for date $DATE: $TAG"
-          else
-            echo "🔄 Creating sequenced release #$INCREMENT for date $DATE: $TAG (found $EXISTING_COUNT existing)"
+            echo "🔄 Tag exists, using: $TAG"
           fi
           
           echo "✅ Selected tag: $TAG (increment: $INCREMENT)"
+          
         else
-          # No sequence - check if base tag already exists
+          # No sequence - just check if base tag exists
           TAG="$BASE_TAG"
           
-          if git tag -l "$TAG" | grep -q "^$TAG$" || gh api repos/$REPOSITORY/tags --jq ".[].name" | grep -q "^$TAG$"; then
+          if git tag -l "$TAG" 2>/dev/null | grep -q "^$TAG$"; then
             echo "⚠️ Tag $TAG already exists! Sequence is disabled but tag exists."
-            echo "🔄 Either enable sequence (use-sequence: true) or use a different prefix/date"
-            echo "create_release=false" >> $GITHUB_OUTPUT
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
-            echo "increment=0" >> $GITHUB_OUTPUT
+            CREATE_RELEASE="false"
+            INCREMENT=0
             echo "❌ Skipping tag creation due to conflict"
-            exit 0
           else
             echo "🎉 Creating tag without sequence: $TAG"
             INCREMENT=0
@@ -119,26 +115,33 @@ runs:
           echo "✅ Selected tag: $TAG (no sequence)"
         fi
         
-        # Set outputs
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
-        echo "create_release=true" >> $GITHUB_OUTPUT
-        echo "increment=$INCREMENT" >> $GITHUB_OUTPUT
+        # Set outputs (ensure they're always set)
+        echo "tag=${TAG}" >> $GITHUB_OUTPUT
+        echo "create_release=${CREATE_RELEASE}" >> $GITHUB_OUTPUT
+        echo "increment=${INCREMENT}" >> $GITHUB_OUTPUT
         
-        # Configure git and create tag
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+        echo "✅ Outputs set - Tag: $TAG, Create Release: $CREATE_RELEASE, Increment: $INCREMENT"
         
-        # Set remote URL with token for authentication
-        git remote set-url origin https://x-access-token:$GH_TOKEN@github.com/$REPOSITORY.git
-        
-        # Create and push tag safely
-        if git tag "$TAG"; then
-          echo "🏷️ Created local tag: $TAG"
-          if git push origin "$TAG"; then
-            echo "✅ Successfully pushed tag: $TAG"
+        # Only create and push tag if CREATE_RELEASE is true
+        if [ "$CREATE_RELEASE" = "true" ]; then
+          # Configure git and create tag
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Set remote URL with token for authentication
+          git remote set-url origin https://x-access-token:$GH_TOKEN@github.com/$REPOSITORY.git 2>/dev/null || echo "⚠️ Failed to set remote URL"
+          
+          # Create and push tag safely
+          if git tag "$TAG" 2>/dev/null; then
+            echo "🏷️ Created local tag: $TAG"
+            if git push origin "$TAG" 2>/dev/null; then
+              echo "✅ Successfully pushed tag: $TAG"
+            else
+              echo "⚠️ Failed to push tag, but continuing..."
+            fi
           else
-            echo "⚠️ Failed to push tag, but continuing..."
+            echo "⚠️ Tag may already exist locally, but continuing..."
           fi
         else
-          echo "⚠️ Failed to create tag locally, but continuing..."
+          echo "⏭️ Skipping tag creation because CREATE_RELEASE is false"
         fi
