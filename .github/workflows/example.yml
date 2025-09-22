@@ -59,7 +59,7 @@ jobs:
 
     - name: Generate CalVer tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: ./
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: ${{ github.repository }}

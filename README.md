@@ -12,7 +12,7 @@ This action automates the generation of CalVer (Calendar Versioning) tags with i
 ```yaml
 - name: Generate CalVer tag
   id: calver
-  uses: nvisionx/gh-actions-calver@main
+  uses: Nvision-x/gh-actions-calver@main
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     repository: ${{ github.repository }}
@@ -85,7 +85,7 @@ jobs:
 
     - name: Generate CalVer tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: ${{ github.repository }}

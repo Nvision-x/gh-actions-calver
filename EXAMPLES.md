@@ -22,7 +22,7 @@ jobs:
 
     - name: Generate CalVer tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         repository: ${{ github.repository }}
@@ -51,7 +51,7 @@ jobs:
 
     - name: Generate CalVer tag with dev prefix
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         prefix: 'dev'
@@ -86,7 +86,7 @@ jobs:
 
     - name: Generate single daily tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         use-sequence: 'false'
@@ -127,7 +127,7 @@ jobs:
 
     - name: Generate environment-specific tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         prefix: ${{ inputs.environment }}
@@ -160,7 +160,7 @@ jobs:
 
     - name: Generate CalVer tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -211,7 +211,7 @@ jobs:
 
     - name: Generate CalVer tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -263,7 +263,7 @@ jobs:
 
     - name: Generate CalVer tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         prefix: ${{ steps.env.outputs.prefix }}
@@ -307,7 +307,7 @@ jobs:
 
     - name: Generate flexible CalVer tag
       id: calver
-      uses: nvisionx/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@main
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         prefix: ${{ inputs.prefix || 'auto' }}
