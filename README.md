@@ -9,33 +9,33 @@ This action automates the generation of CalVer (Calendar Versioning) tags with i
 
 ## 🚀 Quick usage
 
+**Basic usage (all inputs are optional):**
 ```yaml
 - name: Generate CalVer tag
   id: calver
   uses: Nvision-x/gh-actions-calver@main
-  # All inputs are optional - uses smart defaults
 ```
 
-**With custom options:**
+**With prefix and custom options:**
 ```yaml
 - name: Generate CalVer tag
   id: calver
   uses: Nvision-x/gh-actions-calver@main
   with:
-    # github-token: ${{ secrets.GITHUB_TOKEN }}  # Optional - uses default
-    # repository: ${{ github.repository }}       # Optional - uses default
     prefix: 'dev'              # Optional: adds prefix to tag
     use-sequence: 'true'       # Optional: enable/disable sequence numbering
 ```
 
 ## 📥 Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| `github-token` | GitHub token for API access | ❌ | `${{ github.token }}` |
-| `repository` | Repository name (owner/repo) | ❌ | `${{ github.repository }}` |
-| `prefix` | Optional prefix for the tag (e.g., "dev", "prod") | ❌ | `''` |
-| `use-sequence` | Whether to use sequence numbering for same-day releases | ❌ | `'true'` |
+All inputs are optional with smart defaults.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `prefix` | Optional prefix for the tag (e.g., "dev", "prod") | `''` (none) |
+| `use-sequence` | Whether to use sequence numbering for same-day releases | `'true'` |
+
+> **Note:** The action automatically uses `${{ github.token }}` and `${{ github.repository }}` from the workflow context.
 
 ## 📤 Outputs
 
@@ -80,7 +80,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      actions: read
     outputs:
       tag: ${{ steps.calver.outputs.tag }}
       create_release: ${{ steps.calver.outputs.create_release }}
@@ -89,14 +88,11 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Generate CalVer tag
       id: calver
       uses: Nvision-x/gh-actions-calver@main
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: ${{ github.repository }}
         prefix: 'prod'
         use-sequence: 'true'
 
@@ -111,6 +107,8 @@ jobs:
     - name: Use generated tag
       run: echo "Generated tag: ${{ steps.calver.outputs.tag }}"
 ```
+
+> **Pro tip:** The action automatically handles GitHub token and repository detection, so you only need to specify the options you want to customize.
 
 ## 📚 More examples
 
