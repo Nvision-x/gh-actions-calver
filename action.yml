@@ -1,0 +1,144 @@
+name: 'CalVer Tag Generator'
+description: 'Generates CalVer tags with automatic increment for same-day releases'
+author: 'NVisionX Team'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
+  repository:
+    description: 'Repository name (owner/repo)'
+    required: true
+    default: ${{ github.repository }}
+  prefix:
+    description: 'Optional prefix for the tag (e.g., "dev", "prod")'
+    required: false
+    default: ''
+  use-sequence:
+    description: 'Whether to use sequence numbering for same-day releases'
+    required: false
+    default: 'true'
+
+outputs:
+  tag:
+    description: 'Generated CalVer tag'
+    value: ${{ steps.generate.outputs.tag }}
+  create_release:
+    description: 'Whether a release should be created'
+    value: ${{ steps.generate.outputs.create_release }}
+  increment:
+    description: 'Increment number for the day'
+    value: ${{ steps.generate.outputs.increment }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate CalVer tag
+      id: generate
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        REPOSITORY: ${{ inputs.repository }}
+        PREFIX: ${{ inputs.prefix }}
+        USE_SEQUENCE: ${{ inputs.use-sequence }}
+      run: |
+        DATE=$(date +'%Y.%m.%d')
+        
+        echo "📅 Generating CalVer tag for date: $DATE"
+        echo "🏷️ Prefix: ${PREFIX:-'(none)'}"
+        echo "🔢 Use sequence: $USE_SEQUENCE"
+        
+        # Fetch all tags to ensure we have the latest state
+        git fetch --tags
+        
+        # Build base tag format
+        if [ -n "$PREFIX" ]; then
+          BASE_TAG="${PREFIX}${DATE}"
+          SEARCH_PATTERN="${PREFIX}${DATE}"
+        else
+          BASE_TAG="$DATE"
+          SEARCH_PATTERN="$DATE"
+        fi
+        
+        if [ "$USE_SEQUENCE" = "true" ]; then
+          # Count existing tags for today using both remote and local checks
+          if [ -n "$PREFIX" ]; then
+            REMOTE_COUNT=$(gh api repos/$REPOSITORY/tags --jq ".[].name" | grep -c "^${PREFIX}${DATE}-" 2>/dev/null || echo "0")
+            LOCAL_COUNT=$(git tag -l "${PREFIX}${DATE}-*" | wc -l | tr -d ' ')
+          else
+            REMOTE_COUNT=$(gh api repos/$REPOSITORY/tags --jq ".[].name" | grep -c "^$DATE-" 2>/dev/null || echo "0")
+            LOCAL_COUNT=$(git tag -l "$DATE-*" | wc -l | tr -d ' ')
+          fi
+          
+          # Use the higher count to be safe
+          EXISTING_COUNT=$((REMOTE_COUNT > LOCAL_COUNT ? REMOTE_COUNT : LOCAL_COUNT))
+          
+          # Ensure EXISTING_COUNT is a valid number
+          if ! [[ "$EXISTING_COUNT" =~ ^[0-9]+$ ]]; then
+            EXISTING_COUNT=0
+          fi
+          
+          echo "🔍 Found $EXISTING_COUNT existing tags with sequence for today"
+          
+          # Try to find next available increment
+          INCREMENT=$((EXISTING_COUNT + 1))
+          TAG="$BASE_TAG-$INCREMENT"
+          
+          # Keep trying until we find a tag that doesn't exist
+          while git tag -l "$TAG" | grep -q "^$TAG$" || gh api repos/$REPOSITORY/tags --jq ".[].name" | grep -q "^$TAG$"; do
+            INCREMENT=$((INCREMENT + 1))
+            TAG="$BASE_TAG-$INCREMENT"
+            echo "🔄 Tag $BASE_TAG-$((INCREMENT-1)) exists, trying $TAG"
+          done
+          
+          if [ "$EXISTING_COUNT" -eq 0 ]; then
+            echo "🎉 Creating first sequenced release for date $DATE: $TAG"
+          else
+            echo "🔄 Creating sequenced release #$INCREMENT for date $DATE: $TAG (found $EXISTING_COUNT existing)"
+          fi
+          
+          echo "✅ Selected tag: $TAG (increment: $INCREMENT)"
+        else
+          # No sequence - check if base tag already exists
+          TAG="$BASE_TAG"
+          
+          if git tag -l "$TAG" | grep -q "^$TAG$" || gh api repos/$REPOSITORY/tags --jq ".[].name" | grep -q "^$TAG$"; then
+            echo "⚠️ Tag $TAG already exists! Sequence is disabled but tag exists."
+            echo "🔄 Either enable sequence (use-sequence: true) or use a different prefix/date"
+            echo "create_release=false" >> $GITHUB_OUTPUT
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "increment=0" >> $GITHUB_OUTPUT
+            echo "❌ Skipping tag creation due to conflict"
+            exit 0
+          else
+            echo "🎉 Creating tag without sequence: $TAG"
+            INCREMENT=0
+          fi
+          
+          echo "✅ Selected tag: $TAG (no sequence)"
+        fi
+        
+        # Set outputs
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "create_release=true" >> $GITHUB_OUTPUT
+        echo "increment=$INCREMENT" >> $GITHUB_OUTPUT
+        
+        # Configure git and create tag
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Set remote URL with token for authentication
+        git remote set-url origin https://x-access-token:$GH_TOKEN@github.com/$REPOSITORY.git
+        
+        # Create and push tag safely
+        if git tag "$TAG"; then
+          echo "🏷️ Created local tag: $TAG"
+          if git push origin "$TAG"; then
+            echo "✅ Successfully pushed tag: $TAG"
+          else
+            echo "⚠️ Failed to push tag, but continuing..."
+          fi
+        else
+          echo "⚠️ Failed to create tag locally, but continuing..."
+        fi

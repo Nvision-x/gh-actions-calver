@@ -1,0 +1,97 @@
+# Usage example of CalVer Tag Generator
+# This file shows how to use this action in your own repositories
+
+name: Release with CalVer
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment prefix'
+        type: choice
+        options:
+        - none
+        - dev
+        - staging
+        - prod
+        default: 'none'
+      use_sequence:
+        description: 'Use sequence numbering'
+        type: boolean
+        default: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.calver.outputs.tag }}
+      create_release: ${{ steps.calver.outputs.create_release }}
+      increment: ${{ steps.calver.outputs.increment }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Determine prefix
+      id: prefix
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [[ "${{ inputs.environment }}" == "none" ]]; then
+            echo "prefix=" >> $GITHUB_OUTPUT
+          else
+            echo "prefix=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          fi
+          echo "use_sequence=${{ inputs.use_sequence }}" >> $GITHUB_OUTPUT
+        else
+          # Auto-determine based on branch
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "prefix=prod" >> $GITHUB_OUTPUT
+          else
+            echo "prefix=dev" >> $GITHUB_OUTPUT
+          fi
+          echo "use_sequence=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate CalVer tag
+      id: calver
+      uses: nvisionx/gh-actions-calver@main
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        prefix: ${{ steps.prefix.outputs.prefix }}
+        use-sequence: ${{ steps.prefix.outputs.use_sequence }}
+
+    - name: Create Release
+      if: steps.calver.outputs.create_release == 'true'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.calver.outputs.tag }}
+        release_name: Release ${{ steps.calver.outputs.tag }}
+        body: |
+          🎉 **Release ${{ steps.calver.outputs.tag }}**
+          
+          This is release number ${{ steps.calver.outputs.increment }} of the day.
+          
+          **Included changes:**
+          - Automatic CalVer tag generation
+          - Automatic increment for same-day releases
+          
+          **Tag information:**
+          - 📅 Date: $(date +'%Y-%m-%d')
+          - 🔢 Day increment: ${{ steps.calver.outputs.increment }}
+          - 🏷️ Tag: ${{ steps.calver.outputs.tag }}
+        draft: false
+        prerelease: false
+
+    - name: Display results
+      run: |
+        echo "🎯 Generated tag: ${{ steps.calver.outputs.tag }}"
+        echo "📊 Increment: ${{ steps.calver.outputs.increment }}"
+        echo "🚀 Create release: ${{ steps.calver.outputs.create_release }}"

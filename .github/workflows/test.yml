@@ -1,0 +1,112 @@
+name: Test CalVer Action
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Test basic CalVer generation
+      id: calver-basic
+      uses: ./
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+
+    - name: Test CalVer with prefix
+      id: calver-prefix
+      uses: ./
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        prefix: 'test'
+        use-sequence: 'true'
+
+    - name: Test CalVer without sequence
+      id: calver-no-seq
+      uses: ./
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        prefix: 'daily'
+        use-sequence: 'false'
+
+    - name: Validate basic outputs
+      run: |
+        echo "🏷️ Basic tag: ${{ steps.calver-basic.outputs.tag }}"
+        echo "🏷️ Prefix tag: ${{ steps.calver-prefix.outputs.tag }}"
+        echo "🏷️ No sequence tag: ${{ steps.calver-no-seq.outputs.tag }}"
+        
+        # Validate basic tag format (YYYY.MM.DD-N)
+        if [[ "${{ steps.calver-basic.outputs.tag }}" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9]+$ ]]; then
+          echo "✅ Basic tag format is valid"
+        else
+          echo "❌ Basic tag format is invalid: ${{ steps.calver-basic.outputs.tag }}"
+          exit 1
+        fi
+        
+        # Validate prefix tag format (prefix+YYYY.MM.DD-N)
+        if [[ "${{ steps.calver-prefix.outputs.tag }}" =~ ^test[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9]+$ ]]; then
+          echo "✅ Prefix tag format is valid"
+        else
+          echo "❌ Prefix tag format is invalid: ${{ steps.calver-prefix.outputs.tag }}"
+          exit 1
+        fi
+        
+        # Validate no-sequence tag format (prefix+YYYY.MM.DD)
+        if [[ "${{ steps.calver-no-seq.outputs.tag }}" =~ ^daily[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+          echo "✅ No-sequence tag format is valid"
+        else
+          echo "❌ No-sequence tag format is invalid: ${{ steps.calver-no-seq.outputs.tag }}"
+          exit 1
+        fi
+
+        # Validate increments
+        if [[ "${{ steps.calver-basic.outputs.increment }}" =~ ^[0-9]+$ ]] && [[ "${{ steps.calver-prefix.outputs.increment }}" =~ ^[0-9]+$ ]]; then
+          echo "✅ Increments are valid numbers"
+        else
+          echo "❌ Some increments are not valid numbers"
+          exit 1
+        fi
+        
+        # Validate no-sequence increment should be 0
+        if [[ "${{ steps.calver-no-seq.outputs.increment }}" == "0" ]]; then
+          echo "✅ No-sequence increment is correctly 0"
+        else
+          echo "❌ No-sequence increment should be 0, got: ${{ steps.calver-no-seq.outputs.increment }}"
+          exit 1
+        fi
+
+    - name: Test edge cases
+      id: calver-edge
+      uses: ./
+      with:
+        github-token: ${{ github.token }}
+        repository: ${{ github.repository }}
+        prefix: 'edge'
+        use-sequence: 'true'
+
+    - name: Compare results
+      run: |
+        echo "Basic tag: ${{ steps.calver-basic.outputs.tag }}"
+        echo "Prefix tag: ${{ steps.calver-prefix.outputs.tag }}"
+        echo "No-sequence tag: ${{ steps.calver-no-seq.outputs.tag }}"
+        echo "Edge case tag: ${{ steps.calver-edge.outputs.tag }}"
+        
+        # All tags should be different (different prefixes/formats)
+        echo "✅ All test scenarios completed successfully"
