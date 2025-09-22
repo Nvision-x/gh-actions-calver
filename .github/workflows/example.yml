@@ -64,8 +64,6 @@ jobs:
       id: calver
       uses: ./
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: ${{ github.repository }}
         prefix: ${{ steps.prefix.outputs.prefix }}
         use-sequence: ${{ steps.prefix.outputs.use_sequence }}
 

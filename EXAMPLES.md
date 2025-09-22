@@ -23,9 +23,7 @@ jobs:
     - name: Generate CalVer tag
       id: calver
       uses: Nvision-x/gh-actions-calver@main
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: ${{ github.repository }}
+      # No inputs needed - uses smart defaults
 
     - name: Show generated tag
       run: echo "Generated tag: ${{ steps.calver.outputs.tag }}"
@@ -53,7 +51,6 @@ jobs:
       id: calver
       uses: Nvision-x/gh-actions-calver@main
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
         prefix: 'dev'
         use-sequence: 'true'
 
@@ -88,7 +85,6 @@ jobs:
       id: calver
       uses: Nvision-x/gh-actions-calver@main
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
         use-sequence: 'false'
 
     - name: Create Daily Release
@@ -129,7 +125,6 @@ jobs:
       id: calver
       uses: Nvision-x/gh-actions-calver@main
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
         prefix: ${{ inputs.environment }}
         use-sequence: 'true'
 
@@ -162,7 +157,6 @@ jobs:
       id: calver
       uses: Nvision-x/gh-actions-calver@main
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Release
       if: steps.calver.outputs.create_release == 'true'
@@ -213,7 +207,6 @@ jobs:
       id: calver
       uses: Nvision-x/gh-actions-calver@main
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Release with build artifacts
       if: steps.calver.outputs.create_release == 'true'
@@ -265,7 +258,6 @@ jobs:
       id: calver
       uses: Nvision-x/gh-actions-calver@main
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
         prefix: ${{ steps.env.outputs.prefix }}
         use-sequence: 'true'
 
@@ -309,7 +301,6 @@ jobs:
       id: calver
       uses: Nvision-x/gh-actions-calver@main
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
         prefix: ${{ inputs.prefix || 'auto' }}
         use-sequence: ${{ inputs.use_sequence || 'true' }}
 
@@ -345,6 +336,111 @@ jobs:
 | `tag` | Generated CalVer tag | `dev2024.09.22-1` or `2024.09.22` |
 | `create_release` | Whether a release should be created | `true` or `false` |
 | `increment` | Day increment number (0 if no sequence) | `1`, `2`, `0` |
+
+## Using outputs in subsequent steps
+
+### Docker image tagging example
+
+```yaml
+name: Build and Tag Docker Image
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate CalVer tag
+      id: calver
+      uses: Nvision-x/gh-actions-calver@main
+      with:
+        prefix: 'v'
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          myorg/myapp:${{ steps.calver.outputs.tag }}
+          myorg/myapp:latest
+        labels: |
+          org.opencontainers.image.version=${{ steps.calver.outputs.tag }}
+
+    - name: Update Kubernetes manifests
+      run: |
+        echo "Updating deployment with tag: ${{ steps.calver.outputs.tag }}"
+        sed -i "s|image: myorg/myapp:.*|image: myorg/myapp:${{ steps.calver.outputs.tag }}|" k8s/deployment.yaml
+```
+
+### Version file update example
+
+```yaml
+- name: Generate version tag
+  id: version
+  uses: Nvision-x/gh-actions-calver@main
+
+- name: Update version files
+  run: |
+    echo "${{ steps.version.outputs.tag }}" > VERSION
+    echo "export VERSION=${{ steps.version.outputs.tag }}" > version.sh
+    jq '.version = "${{ steps.version.outputs.tag }}"' package.json > package.json.tmp
+    mv package.json.tmp package.json
+
+- name: Create artifact with version
+  run: |
+    echo "Building artifact version: ${{ steps.version.outputs.tag }}"
+    tar -czf myapp-${{ steps.version.outputs.tag }}.tar.gz dist/
+```
+
+### Multi-stage deployment example
+
+```yaml
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.calver.outputs.tag }}
+      should_deploy: ${{ steps.calver.outputs.create_release }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Generate version
+      id: calver
+      uses: Nvision-x/gh-actions-calver@main
+
+  build:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+    - name: Build with version
+      run: |
+        echo "Building version: ${{ needs.tag.outputs.version }}"
+        docker build -t myapp:${{ needs.tag.outputs.version }} .
+
+  deploy:
+    needs: [tag, build]
+    if: needs.tag.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy version
+      run: |
+        echo "Deploying version: ${{ needs.tag.outputs.version }}"
+        kubectl set image deployment/myapp myapp=myapp:${{ needs.tag.outputs.version }}
+```
 
 ## Required permissions
 

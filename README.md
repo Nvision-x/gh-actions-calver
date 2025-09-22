@@ -13,9 +13,17 @@ This action automates the generation of CalVer (Calendar Versioning) tags with i
 - name: Generate CalVer tag
   id: calver
   uses: Nvision-x/gh-actions-calver@main
+  # All inputs are optional - uses smart defaults
+```
+
+**With custom options:**
+```yaml
+- name: Generate CalVer tag
+  id: calver
+  uses: Nvision-x/gh-actions-calver@main
   with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    repository: ${{ github.repository }}
+    # github-token: ${{ secrets.GITHUB_TOKEN }}  # Optional - uses default
+    # repository: ${{ github.repository }}       # Optional - uses default
     prefix: 'dev'              # Optional: adds prefix to tag
     use-sequence: 'true'       # Optional: enable/disable sequence numbering
 ```
@@ -24,8 +32,8 @@ This action automates the generation of CalVer (Calendar Versioning) tags with i
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `github-token` | GitHub token for API access | ✅ | `${{ github.token }}` |
-| `repository` | Repository name (owner/repo) | ✅ | `${{ github.repository }}` |
+| `github-token` | GitHub token for API access | ❌ | `${{ github.token }}` |
+| `repository` | Repository name (owner/repo) | ❌ | `${{ github.repository }}` |
 | `prefix` | Optional prefix for the tag (e.g., "dev", "prod") | ❌ | `''` |
 | `use-sequence` | Whether to use sequence numbering for same-day releases | ❌ | `'true'` |
 

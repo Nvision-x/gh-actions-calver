@@ -5,11 +5,11 @@ author: 'NVisionX Team'
 inputs:
   github-token:
     description: 'GitHub token for API access'
-    required: true
+    required: false
     default: ${{ github.token }}
   repository:
     description: 'Repository name (owner/repo)'
-    required: true
+    required: false
     default: ${{ github.repository }}
   prefix:
     description: 'Optional prefix for the tag (e.g., "dev", "prod")'
