@@ -2,8 +2,8 @@
 
 🏷️ **GitHub Action to automatically generate CalVer tags with increments for same-day releases.**
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/nvisionx/gh-actions-calver)](https://github.com/nvisionx/gh-actions-calver/releases)
-[![GitHub](https://img.shields.io/github/license/nvisionx/gh-actions-calver)](LICENSE)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/Nvision-x/gh-actions-calver)](https://github.com/Nvision-x/gh-actions-calver/releases)
+[![GitHub](https://img.shields.io/github/license/Nvision-x/gh-actions-calver)](https://github.com/Nvision-x/gh-actions-calver/blob/main/LICENSE)
 
 This action automates the generation of CalVer (Calendar Versioning) tags with increments for multiple releases on the same day.
 
@@ -128,7 +128,7 @@ Contributions are welcome. For major changes, please open an issue first to disc
 
 ## 🐛 Report bugs
 
-If you find a bug, please open an [issue](https://github.com/nvisionx/gh-actions-calver/issues) with:
+If you find a bug, please open an [issue](https://github.com/Nvision-x/gh-actions-calver/issues) with:
 - Description of the problem
 - Steps to reproduce
 - Expected vs actual behavior

@@ -51,9 +51,9 @@ jobs:
           fi
           echo "use_sequence=${{ inputs.use_sequence }}" >> $GITHUB_OUTPUT
         else
-          # Auto-determine based on branch
+          # Auto-determine based on branch - no prefix for this repo
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "prefix=prod" >> $GITHUB_OUTPUT
+            echo "prefix=" >> $GITHUB_OUTPUT
           else
             echo "prefix=dev" >> $GITHUB_OUTPUT
           fi
