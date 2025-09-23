@@ -23,7 +23,7 @@ This action automates the generation of CalVer (Calendar Versioning) tags with i
   uses: Nvision-x/gh-actions-calver@main
   with:
     prefix: 'dev'              # Optional: adds prefix to tag
-    use-sequence: 'true'       # Optional: enable/disable sequence numbering
+    use-sequence: true         # Optional: enable/disable sequence numbering
 ```
 
 ## 📥 Inputs
@@ -33,7 +33,7 @@ All inputs are optional with smart defaults.
 | Input | Description | Default |
 |-------|-------------|---------|
 | `prefix` | Optional prefix for the tag (e.g., "dev", "prod") | `''` (none) |
-| `use-sequence` | Whether to use sequence numbering for same-day releases | `'true'` |
+| `use-sequence` | Whether to use sequence numbering for same-day releases | `true` |
 
 > **Note:** The action automatically uses `${{ github.token }}` and `${{ github.repository }}` from the workflow context.
 
@@ -94,7 +94,7 @@ jobs:
       uses: Nvision-x/gh-actions-calver@main
       with:
         prefix: 'prod'
-        use-sequence: 'true'
+        use-sequence: true
 
     - name: Create Release
       if: steps.calver.outputs.create_release == 'true'
