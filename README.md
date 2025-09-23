@@ -10,49 +10,56 @@ This action automates the generation of CalVer (Calendar Versioning) tags with i
 ## 🚀 Quick usage
 
 **Basic usage (all inputs are optional):**
+
 ```yaml
 - name: Generate CalVer tag
   id: calver
-  uses: Nvision-x/gh-actions-calver@main
+  uses: Nvision-x/gh-actions-calver@v2024.09.22-1  # Recommended: use specific version
+  # uses: Nvision-x/gh-actions-calver@main         # Alternative: latest version
 ```
 
 **With prefix and custom options:**
+
 ```yaml
 - name: Generate CalVer tag
   id: calver
-  uses: Nvision-x/gh-actions-calver@main
+  uses: Nvision-x/gh-actions-calver@v2024.09.22-1
   with:
     prefix: 'dev'              # Optional: adds prefix to tag
     use-sequence: true         # Optional: enable/disable sequence numbering
 ```
 
+> **💡 Version recommendation:** Use a specific version (e.g., `@v2024.09.22-1`) for production workflows to ensure stability. Use `@main` only for testing or if you want the latest features.
+
 ## 📥 Inputs
 
 All inputs are optional with smart defaults.
 
-| Input | Description | Default |
-|-------|-------------|---------|
-| `prefix` | Optional prefix for the tag (e.g., "dev", "prod") | `''` (none) |
-| `use-sequence` | Whether to use sequence numbering for same-day releases | `true` |
+| Input            | Description                                             | Default       |
+| ---------------- | ------------------------------------------------------- | ------------- |
+| `prefix`       | Optional prefix for the tag (e.g., "dev", "prod")       | `''` (none) |
+| `use-sequence` | Whether to use sequence numbering for same-day releases | `true`      |
 
 > **Note:** The action automatically uses `${{ github.token }}` and `${{ github.repository }}` from the workflow context.
 
 ## 📤 Outputs
 
-| Output | Description |
-|--------|-------------|
-| `tag` | Generated CalVer tag (format: YYYY.MM.DD-N) |
+| Output             | Description                                       |
+| ------------------ | ------------------------------------------------- |
+| `tag`            | Generated CalVer tag (format: YYYY.MM.DD-N)       |
 | `create_release` | Boolean indicating if a release should be created |
-| `increment` | Increment number for the day |
+| `increment`      | Increment number for the day                      |
 
 ## 🏷️ Tag Format
 
 ### With sequence (default):
+
 - **First release of the day**: `2024.09.22-1`
 - **Second release of the day**: `2024.09.22-2`
 - **With prefix**: `dev2024.09.22-1`, `prod2024.09.22-1`
 
 ### Without sequence:
+
 - **Single release per day**: `2024.09.22`
 - **With prefix**: `dev2024.09.22`, `prod2024.09.22`
 
@@ -91,7 +98,7 @@ jobs:
 
     - name: Generate CalVer tag
       id: calver
-      uses: Nvision-x/gh-actions-calver@main
+      uses: Nvision-x/gh-actions-calver@v2024.09.22-1
       with:
         prefix: 'prod'
         use-sequence: true
@@ -113,29 +120,3 @@ jobs:
 ## 📚 More examples
 
 For more usage examples, see [EXAMPLES.md](EXAMPLES.md).
-
-## 🔧 Development
-
-If you want to contribute to this project:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for more details.
-
-## 🤝 Contributing
-
-Contributions are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
-## 🐛 Report bugs
-
-If you find a bug, please open an [issue](https://github.com/Nvision-x/gh-actions-calver/issues) with:
-- Description of the problem
-- Steps to reproduce
-- Expected vs actual behavior
-- Relevant logs
