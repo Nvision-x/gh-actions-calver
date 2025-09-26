@@ -1,0 +1,74 @@
+name: Create Release
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - 'EXAMPLES.md'
+      - '.github/workflows/test.yml'
+      - '.github/workflows/example.yml'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate CalVer tag with v prefix
+      id: calver
+      uses: ./
+      with:
+        prefix: 'v'
+        use-sequence: true
+
+    - name: Create GitHub Release
+      if: steps.calver.outputs.create_release == 'true'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.calver.outputs.tag }}
+        name: Release ${{ steps.calver.outputs.tag }}
+        body: |
+          ## 🚀 CalVer Action Release ${{ steps.calver.outputs.tag }}
+          
+          ### What's included:
+          - CalVer tag generation with customizable prefixes
+          - Conditional sequence numbering
+          - Automatic conflict resolution
+          - GitHub token and repository auto-detection
+          
+          ### Usage:
+          ```yaml
+          - name: Generate CalVer tag
+            uses: Nvision-x/gh-actions-calver@${{ steps.calver.outputs.tag }}
+          ```
+          
+          ### Changes:
+          - Latest improvements and bug fixes
+          - Documentation updates
+          
+          ---
+          Generated automatically by the CalVer Action itself! 🎯
+        generate_release_notes: true
+        make_latest: true
+
+    - name: Update README with latest version
+      if: steps.calver.outputs.create_release == 'true'
+      run: |
+        # Update the README to show the latest version
+        sed -i.bak 's/@main/@${{ steps.calver.outputs.tag }}/g' README.md
+        sed -i.bak 's/Currently use `@main`/Use `@${{ steps.calver.outputs.tag }}` or `@main`/g' README.md
+        
+        # Check if there are changes
+        if ! git diff --quiet README.md; then
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "docs: update README with release ${{ steps.calver.outputs.tag }}"
+          git push
+        fi
