@@ -15,7 +15,7 @@ This action automates the generation of CalVer (Calendar Versioning) tags with i
 - name: Generate CalVer tag
   id: calver
   uses: Nvision-x/gh-actions-calver@v2024.09.22-1  # Recommended: use specific version
-  # uses: Nvision-x/gh-actions-calver@main         # Alternative: latest version
+  # uses: Nvision-x/gh-actions-calver@v2025.09.26-1         # Alternative: latest version
 ```
 
 **With prefix and custom options:**
@@ -29,7 +29,7 @@ This action automates the generation of CalVer (Calendar Versioning) tags with i
     use-sequence: true         # Optional: enable/disable sequence numbering
 ```
 
-> **💡 Version recommendation:** Use a specific version (e.g., `@v2024.09.22-1`) for production workflows to ensure stability. Use `@main` only for testing or if you want the latest features.
+> **💡 Version recommendation:** Use a specific version (e.g., `@v2024.09.22-1`) for production workflows to ensure stability. Use `@v2025.09.26-1` only for testing or if you want the latest features.
 
 ## 📥 Inputs
 
