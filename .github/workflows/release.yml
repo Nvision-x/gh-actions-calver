@@ -3,11 +3,6 @@ name: Create Release
 on:
   push:
     branches: [ main ]
-    paths-ignore:
-      - 'README.md'
-      - 'EXAMPLES.md'
-      - '.github/workflows/test.yml'
-      - '.github/workflows/example.yml'
 
 jobs:
   release:
