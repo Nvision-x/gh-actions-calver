@@ -44,11 +44,13 @@ All inputs are optional with smart defaults.
 
 ## 📤 Outputs
 
-| Output             | Description                                       |
-| ------------------ | ------------------------------------------------- |
-| `tag`            | Generated CalVer tag (format: YYYY.MM.DD-N)       |
-| `create_release` | Boolean indicating if a release should be created |
-| `increment`      | Increment number for the day                      |
+| Output | Description |
+|--------|-------------|
+| `tag` | Generated CalVer tag (format: YYYY.MM.DD-N) |
+| `create_release` | `true` if a new tag was created, `false` if tag already existed |
+| `increment` | Increment number for the day |
+
+> **Note:** This action only creates Git tags. To create GitHub releases, use the `create_release` output with `softprops/action-gh-release` or similar.
 
 ## 🏷️ Tag Format
 
