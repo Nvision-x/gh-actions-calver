@@ -3,6 +3,10 @@ name: Create Release
 on:
   push:
     branches: [ main ]
+  # Break-glass: lets this pipeline be run by hand when GitHub drops the
+  # triggering event, instead of pushing a throwaway commit to re-trigger.
+  # See the manual-run runbook.
+  workflow_dispatch:
 
 jobs:
   release:
